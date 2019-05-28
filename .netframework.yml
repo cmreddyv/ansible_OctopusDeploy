@@ -1,0 +1,12 @@
+- name: Installing NetFramework 4.7.2
+  win_get_url:
+    url: 'https://download.microsoft.com/download/6/E/4/6E48E8AB-DC00-419E-9704-06DD46E5F81D/NDP472-KB4054530-x86-x64-AllOS-ENU.exe'
+    dest: 'C:\Users\Administrator\Downloads\NDP472-KB4054530-x86-x64-AllOS-ENU.exe'
+
+- name: Run Microsoft .NET Framework 4.6.1 installer
+  raw: C:\Users\Administrator\Downloads\NDP472-KB4054530-x86-x64-AllOS-ENU.exe /q /norestart /log C:\tmp\dotnet\dotnet461\log.txt /x86 /x64 /redist
+  register: dotnet_install
+
+- name: Reboot as required by Microsoft .NET Framework 4.6.1 installer
+  win_reboot:
+  when: dotnet_install.rebbot_required

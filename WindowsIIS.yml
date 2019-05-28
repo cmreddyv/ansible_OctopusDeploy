@@ -1,0 +1,44 @@
+- hosts: windows
+  tasks:
+    - name: Install IIS Web-Server with sub features and management tools
+      win_feature:
+        name: Web-Server,Web-Basic-Auth,Web-Windows-Auth,Web-Mgmt-Service,Web-Scripting-Tools,Web-Mgmt-Tools,Web-Mgmt-Console,Web-Mgmt-Compat # Roles to be installed on the sever
+        state: present
+      register: win_feature
+
+    - name: Reboot if installing Web-Server feature requires it
+      win_reboot:
+      when: win_feature.reboot_required  #reboot the server if the roles installed requires a reboot
+
+    - name: Downloading the OctopusDeploy Client
+      win_get_url:
+        url: 'https://download.octopusdeploy.com/octopus/Octopus.Tentacle.4.0.1-x64.msi'   #Downloading the msi and copying to the destination
+        dest: 'C:\Users\Administrator\Downloads\Octopus.Tentacle.4.0.1-x64.msi'
+
+
+    - name: Install OctopusDeploy
+      win_package:
+        path: 'C:\Users\Administrator\Downloads\Octopus.Tentacle.4.0.1-x64.msi'  #Installing the Octopus Deploy inside the machine
+        state: present
+
+    - name: Copy Octopus Script in Windows Machine
+      win_copy:
+        src: /windows/octopus.ps1     #Copy the powershell scrit to the remote machine
+        dest: C:\temp\
+        remote_src: no
+
+
+
+    - name: Run remote PowerShell Script
+      win_command: powershell.exe -ExecutionPolicy ByPass -File C:/temp/octopus.ps1 #Run the powershell script to configure the Octops and add the tentacle to the Octopus Server with the environment and role
+
+
+    - name: Check for current Microsoft .NET Framework 4 version
+      win_reg_stat:
+        path: HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full     #Check for the current .net framework version
+        name: Version              
+      register: dotnet_version
+
+    - name: Install Microsoft .NET Framework 4.6.1
+      include: net.yml
+      when: dotnet_version.value | version_compare('4.6.01', '<', strict=True)   #if the .NetFramework version is less than 4.6.1 install the latest version 
